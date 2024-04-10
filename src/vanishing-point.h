@@ -145,7 +145,7 @@ public:
 
     unsigned int numberOfBoxes(); // the number of boxes linked to all VPs of the dragger
     VanishingPoint *findVPWithBox(SPBox3D *box);
-    std::set<VanishingPoint*, less_ptr> VPsOfSelectedBoxes();
+    std::set<VanishingPoint *> VPsOfSelectedBoxes();
 
     bool hasPerspective(const Persp3D *persp);
     void mergePerspectives(); // remove duplicate perspectives

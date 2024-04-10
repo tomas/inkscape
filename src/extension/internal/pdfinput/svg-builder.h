@@ -202,7 +202,6 @@ private:
     std::vector<SvgGraphicsState> _state_stack;
 
     SPCSSAttr *_font_style;          // Current font style
-    GfxFont *_current_font;
     const char *_font_specification;
     double _font_scaling;
     bool _need_font_update;

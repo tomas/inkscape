@@ -109,7 +109,6 @@ SvgBuilder::~SvgBuilder() {
 
 void SvgBuilder::_init() {
     _font_style = NULL;
-    _current_font = NULL;
     _font_specification = NULL;
     _font_scaling = 1;
     _need_font_update = true;
@@ -359,10 +358,17 @@ void SvgBuilder::_setStrokeStyle(SPCSSAttr *css, GfxState *state) {
     sp_repr_css_set_property(css, "stroke-miterlimit", os_ml.str().c_str());
 
     // Line dash
-    double *dash_pattern;
     int dash_length;
     double dash_start;
+#if POPPLER_CHECK_VERSION(22, 9, 0)
+    const double *dash_pattern;
+    const std::vector<double> &dash = state->getLineDash(&dash_start);
+    dash_pattern = dash.data();
+    dash_length = dash.size();
+#else
+    double *dash_pattern;
     state->getLineDash(&dash_pattern, &dash_length, &dash_start);
+#endif
     if ( dash_length > 0 ) {
         Inkscape::CSSOStringStream os_array;
         for ( int i = 0 ; i < dash_length ; i++ ) {
@@ -1013,11 +1019,8 @@ void SvgBuilder::updateFont(GfxState *state) {
     _need_font_update = false;
     updateTextMatrix(state);    // Ensure that we have a text matrix built
 
-    if (_font_style) {
-        //sp_repr_css_attr_unref(_font_style);
-    }
     _font_style = sp_repr_css_attr_new();
-    GfxFont *font = state->getFont();
+    auto font = state->getFont();
     // Store original name
     if (font->getName()) {
         _font_specification = font->getName()->getCString();
@@ -1163,7 +1166,6 @@ void SvgBuilder::updateFont(GfxState *state) {
         sp_repr_css_set_property(_font_style, "writing-mode", "tb");
     }
 
-    _current_font = font;
     _invalidated_style = true;
 }
 

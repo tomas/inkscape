@@ -104,7 +104,7 @@ vp_knot_moved_handler (SPKnot *knot, Geom::Point const &ppointer, guint state, g
         /* with Shift; if there is more than one box linked to this VP
            we need to split it and create a new perspective */
         if (dragger->numberOfBoxes() > 1) { // FIXME: Don't do anything if *all* boxes of a VP are selected
-            std::set<VanishingPoint*, less_ptr> sel_vps = dragger->VPsOfSelectedBoxes();
+            std::set<VanishingPoint*> sel_vps = dragger->VPsOfSelectedBoxes();
 
             std::list<SPBox3D *> sel_boxes;
             for (std::set<VanishingPoint*, less_ptr>::iterator vp = sel_vps.begin(); vp != sel_vps.end(); ++vp) {
@@ -391,20 +391,20 @@ VPDragger::findVPWithBox (SPBox3D *box) {
     return NULL;
 }
 
-std::set<VanishingPoint*, less_ptr>
-VPDragger::VPsOfSelectedBoxes() {
-    std::set<VanishingPoint*, less_ptr> sel_vps;
+std::set<VanishingPoint *> VPDragger::VPsOfSelectedBoxes()
+{
+    std::set<VanishingPoint *> sel_vps;
     VanishingPoint *vp;
     // FIXME: Should we take the selection from the parent VPDrag? I guess it shouldn't make a difference.
     Inkscape::Selection *sel = SP_ACTIVE_DESKTOP->getSelection();
-    std::vector<SPItem*> itemlist=sel->itemList();
-    for (std::vector<SPItem*>::const_iterator i=itemlist.begin();i!=itemlist.end();++i) {
+    auto itemlist = sel->items();
+    for (auto i = itemlist.begin(); i != itemlist.end(); ++i) {
         SPItem *item = *i;
-        SPBox3D *box = dynamic_cast<SPBox3D *>(item);
+        auto box = dynamic_cast<SPBox3D *>(item);
         if (box) {
             vp = this->findVPWithBox(box);
             if (vp) {
-                sel_vps.insert (vp);
+                sel_vps.insert(vp);
             }
         }
     }

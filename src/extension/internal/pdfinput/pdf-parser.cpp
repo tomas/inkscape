@@ -705,7 +705,11 @@ void PdfParser::opSetDash(Object args[], int /*numArgs*/)
       _POPPLER_FREE(obj);
     }
   }
+#if POPPLER_CHECK_VERSION(22, 9, 0)
+  state->setLineDash(std::vector<double> (dash, dash + length), args[1].getNum());
+#else
   state->setLineDash(dash, length, args[1].getNum());
+#endif
   builder->updateStyle(state);
 }
 
@@ -2199,7 +2203,7 @@ void PdfParser::opSetCharSpacing(Object args[], int /*numArgs*/)
 // TODO not good that numArgs is ignored but args[] is used:
 void PdfParser::opSetFont(Object args[], int /*numArgs*/)
 {
-  GfxFont *font = res->lookupFont(args[0].getName());
+  auto font = res->lookupFont(args[0].getName());
 
   if (!font) {
     // unsetting the font (drawing no text) is better than using the
@@ -2208,15 +2212,17 @@ void PdfParser::opSetFont(Object args[], int /*numArgs*/)
     fontChanged = gTrue;
     return;
   }
-  if (printCommands) {
-    printf("  font: tag=%s name='%s' %g\n",
-	   font->getTag()->getCString(),
-	   font->getName() ? font->getName()->getCString() : "???",
-	   args[1].getNum());
-    fflush(stdout);
-  }
+  // if (printCommands) {
+  //   printf("  font: tag=%s name='%s' %g\n",
+	//    font->getTag()->getCString(),
+	//    font->getName() ? font->getName()->getCString() : "???",
+	//    args[1].getNum());
+  //   fflush(stdout);
+  // }
 
+#if !POPPLER_CHECK_VERSION(22, 4, 0)
   font->incRefCnt();
+#endif
   state->setFont(font, args[1].getNum());
   fontChanged = gTrue;
 }
@@ -2410,7 +2416,6 @@ void PdfParser::doShowText(const GooString *s) {
 #else
 void PdfParser::doShowText(GooString *s) {
 #endif
-  GfxFont *font;
   int wMode;
   double riseX, riseY;
   CharCode code;
@@ -2429,7 +2434,7 @@ void PdfParser::doShowText(GooString *s) {
 #endif
   int len, n, uLen;
 
-  font = state->getFont();
+  auto font = state->getFont();
   wMode = font->getWMode();
 
   builder->beginString(state);
@@ -2482,8 +2487,8 @@ void PdfParser::doShowText(GooString *s) {
       //out->updateCTM(state, 1, 0, 0, 1, 0, 0);
       if (0){ /*!out->beginType3Char(state, curX + riseX, curY + riseY, tdx, tdy,
 			       code, u, uLen)) {*/
-        _POPPLER_CALL_ARGS(charProc, ((Gfx8BitFont *)font)->getCharProc, code);
-	if ((resDict = ((Gfx8BitFont *)font)->getResources())) {
+        _POPPLER_CALL_ARGS(charProc, _POPPLER_FONTPTR_TO_GFX8(font)->getCharProc, code);
+	if (resDict = _POPPLER_FONTPTR_TO_GFX8(font)->getResources()) {
 	  pushResources(resDict);
 	}
 	if (charProc.isStream()) {

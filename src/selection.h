@@ -91,6 +91,8 @@ public:
      */
     SPDesktop *desktop() { return _desktop; }
 
+    std::vector<SPItem*> items() { return _items; }
+
     /**
      * Returns active layer for selection (currentLayer or its parent).
      *

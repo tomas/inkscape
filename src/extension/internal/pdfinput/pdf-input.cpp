@@ -81,12 +81,13 @@ static const gchar * crop_setting_choices[] = {
     N_("art box")
 };
 
-PdfImportDialog::PdfImportDialog(PDFDoc *doc, const gchar */*uri*/)
+PdfImportDialog::PdfImportDialog(std::shared_ptr<PDFDoc> doc, const gchar */*uri*/)
 {
 #ifdef HAVE_POPPLER_CAIRO
     _poppler_doc = NULL;
 #endif // HAVE_POPPLER_CAIRO
-    _pdf_doc = doc;
+    _pdf_doc = std::move(doc);
+
     cancelbutton = Gtk::manage(new class Gtk::Button(Gtk::StockID("gtk-cancel")));
     okbutton = Gtk::manage(new class Gtk::Button(Gtk::StockID("gtk-ok")));
     _labelSelect = Gtk::manage(new class Gtk::Label(_("Select page:")));
@@ -704,8 +705,16 @@ PdfInput::open(::Inkscape::Extension::Input * /*mod*/, const gchar * uri) {
 #ifndef WIN32
     // poppler does not use glib g_open. So on win32 we must use unicode call. code was copied from
     // glib gstdio.c
+
+    std::shared_ptr<PDFDoc> pdf_doc;
+
+#if POPPLER_CHECK_VERSION(22, 3, 0)
+    pdf_doc = std::make_shared<PDFDoc>(std::make_unique<GooString>(uri)); // TODO: Could ask for password
+#else
     GooString *filename_goo = new GooString(uri);
-    PDFDoc *pdf_doc = new PDFDoc(filename_goo, NULL, NULL, NULL);   // TODO: Could ask for password
+    pdf_doc = std::make_shared<PDFDoc>(filename_goo, nullptr, nullptr, nullptr); // TODO: Could ask for password
+#endif
+
     //delete filename_goo;
 #else
     wchar_t *wfilename = reinterpret_cast<wchar_t*>(g_utf8_to_utf16 (uri, -1, NULL, NULL, NULL));
@@ -720,7 +729,6 @@ PdfInput::open(::Inkscape::Extension::Input * /*mod*/, const gchar * uri) {
 
     if (!pdf_doc->isOk()) {
         int error = pdf_doc->getErrorCode();
-        delete pdf_doc;
         if (error == errEncrypted) {
             g_message("Document is encrypted.");
         } else if (error == errOpenFile) {
@@ -754,7 +762,6 @@ PdfInput::open(::Inkscape::Extension::Input * /*mod*/, const gchar * uri) {
         if (!dlg->showDialog()) {
             _cancelled = true;
             delete dlg;
-            delete pdf_doc;
             return NULL;
         }
     }
@@ -920,7 +927,6 @@ PdfInput::open(::Inkscape::Extension::Input * /*mod*/, const gchar * uri) {
     }
 
     // Cleanup
-    delete pdf_doc;
     delete dlg;
 
     // Set viewBox if it doesn't exist
