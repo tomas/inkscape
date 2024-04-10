@@ -1,0 +1,91 @@
+# Dependencies are managed in the Dockerfile in the inkscape-ci-docker
+# Git repository. Change them there, wait a bit, and then we'll use
+# the new ones here in these builds.
+image: registry.gitlab.com/inkscape/inkscape-ci-docker/0-92-x
+
+variables:
+  GIT_DEPTH: "10"
+  GIT_SUBMODULE_STRATEGY: recursive
+
+
+# Building inkscape
+inkscape:linux:
+  stage: build
+  cache:
+    key: "cache-linux-0.92"
+    paths:
+      - ccache/
+  before_script:
+    # CCache Config
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+  script:
+    - mkdir -p build/conf
+    - ln -s . share/inkscape
+    - cd build
+    - cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX:PATH=$PWD/install_dir/
+    - make -j3 install
+    - make check
+    - cd ..
+  artifacts:
+    expire_in: 1 year
+    paths:
+      - build/
+
+# Building inkscape (with Ubuntu 14.04 and enforcing C++98)
+inkscape:linux-14.04:
+  stage: build
+  image: registry.gitlab.com/inkscape/inkscape-ci-docker/0-92-x-14-04
+  cache:
+    key: "cache-linux-0.92-14.04"
+    paths:
+      - ccache/
+  before_script:
+    # CCache Config
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+  script:
+    - mkdir -p build/conf
+    - ln -s . share/inkscape
+    - cd build
+    - CC="ccache gcc" CXX="ccache g++" CXXFLAGS="$CXXFLAGS -std=c++98"
+        cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX:PATH=$PWD/install_dir/ ..
+    - make -j3 install
+    - make check
+    - cd ..
+  artifacts:
+    expire_in: 1 year
+    paths:
+      - build/
+
+
+translations:
+  stage: build
+  script:
+    # make sure dependecies for inkscape.pot are up-to-date
+    - mkdir build && cd build && cmake .. && make inkscape_pot && cd ..
+    - cd po/
+
+    # update POTFILES.in
+    - grep -v "^#" POTFILES.in > POTFILES.in.1
+    - ./generate_POTFILES.sh
+    - grep -v "^#" POTFILES.in > POTFILES.in.2
+
+    # update inkscape.pot and sync all .po files
+    - intltool-update --pot
+    - ./update_po_files.sh
+
+    # check if POTFILES.in should be updated in the repo (shall we automate this?)
+    - 'if [ -n "$(diff POTFILES.in.1 POTFILES.in.2)" ]; then
+        echo "New translatable source files were added.";
+        echo "Please update POTFILES.in so they can be translated (or add them to POTFILES.skip)";
+        exit 1;
+      fi'
+    - rm POTFILES.in.1 POTFILES.in.2
+  artifacts:
+    name: "translations"
+    paths:
+      - po/
+    when: always

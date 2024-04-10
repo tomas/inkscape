@@ -1,0 +1,14 @@
+                            Inkscape 0.92.5
+
+                     -~=  Released 2020-04-08  =~-
+
+
++----------------------------------------------------------------------+
+|                          Release Highlights                          |
++----------------------------------------------------------------------+
+
+Inkscape 0.92.5 is a stability and bugfix release. It brings some fixes
+from the main branch into the 0.92.x series, and fixes a major annoyance
+on Windows for detecting installed fonts. Extensions are now compatible
+with python 3. 
+
