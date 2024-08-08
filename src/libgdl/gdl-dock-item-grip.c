@@ -144,15 +144,15 @@ gdl_dock_item_grip_expose (GtkWidget      *widget,
                               "handlebox", handle_area.x, handle_area.y,
                               handle_area.width, handle_area.height,
                               GTK_ORIENTATION_VERTICAL);
-        
+
         }
-        
+
     }
-  
+
 /* see bug #950556: may contribute to regression with GTK2/Quartz */
 #if !defined(GDK_WINDOWING_QUARTZ)
-   if (gdl_dock_item_or_child_has_focus(grip->item)) { 
-	   
+   if (gdl_dock_item_or_child_has_focus(grip->item)) {
+
       gtk_paint_focus (gtk_widget_get_style (widget),
                        gtk_widget_get_window (widget),
                        gtk_widget_get_state (widget),
@@ -362,7 +362,7 @@ gdl_dock_item_grip_init (GdlDockItemGrip *grip)
     grip->_priv = g_new0 (GdlDockItemGripPrivate, 1);
     grip->_priv->label = NULL;
     grip->_priv->handle_shown = FALSE;
-    
+
     /* create the close button */
     gtk_widget_push_composite_child ();
     grip->_priv->close_button = gtk_button_new ();
@@ -412,20 +412,24 @@ gdl_dock_item_grip_realize (GtkWidget *widget)
     GTK_WIDGET_CLASS (gdl_dock_item_grip_parent_class)->realize (widget);
 
     g_return_if_fail (grip->_priv != NULL);
-    
+
     if (!grip->title_window) {
         GtkAllocation  allocation;
         GdkWindowAttr  attributes;
         GdkCursor     *cursor;
 
-        g_return_if_fail (grip->_priv->label != NULL);
+        // g_return_if_fail (grip->_priv->label != NULL);
 
-        gtk_widget_get_allocation (grip->_priv->label, &allocation);
+        // gtk_widget_get_allocation (grip->_priv->label, &allocation);
 
-        attributes.x           = allocation.x;
-        attributes.y           = allocation.y;
-        attributes.width       = allocation.width;
-        attributes.height      = allocation.height;
+        // attributes.x           = allocation.x;
+        // attributes.y           = allocation.y;
+        // attributes.width       = allocation.width;
+        // attributes.height      = allocation.height;
+        attributes.x           = 0;
+        attributes.y           = 0;
+        attributes.width       = 1;
+        attributes.height      = 1;
         attributes.window_type = GDK_WINDOW_CHILD;
         attributes.wclass      = GDK_INPUT_OUTPUT;
         attributes.event_mask  = GDK_ALL_EVENTS_MASK;
@@ -444,11 +448,11 @@ gdl_dock_item_grip_realize (GtkWidget *widget)
 
         /* Unset the background so as to make the colour match the parent window */
         gtk_widget_modify_bg(widget, GTK_STATE_NORMAL, NULL);
- 
+
         if (GDL_DOCK_ITEM_CANT_CLOSE (grip->item) &&
             GDL_DOCK_ITEM_CANT_ICONIFY (grip->item))
             cursor = NULL;
-        else 
+        else
             cursor = gdk_cursor_new_for_display (gtk_widget_get_display (widget),
                                              GDK_HAND2);
         gdk_window_set_cursor (grip->title_window, cursor);
@@ -508,7 +512,7 @@ gdl_dock_item_grip_size_request (GtkWidget      *widget,
 
     border_width  = gtk_container_get_border_width (GTK_CONTAINER (widget));
     grip = GDL_DOCK_ITEM_GRIP (widget);
-    
+
     requisition->width = border_width * 2/* + ALIGN_BORDER*/;
     requisition->height = border_width * 2;
 
@@ -520,17 +524,19 @@ gdl_dock_item_grip_size_request (GtkWidget      *widget,
     if (gtk_widget_get_visible (grip->_priv->close_button)) {
        requisition->width += child_requisition.width;
     }
-    
+
     gtk_widget_size_request (grip->_priv->iconify_button, &child_requisition);
     layout_height = MAX (layout_height, child_requisition.height);
     if (gtk_widget_get_visible (grip->_priv->iconify_button)) {
         requisition->width += child_requisition.width;
     }
-   
-    gtk_widget_size_request (grip->_priv->label, &child_requisition);
-    requisition->width += child_requisition.width;
-    layout_height = MAX (layout_height, child_requisition.height);
-    
+
+    if (grip->_priv->label) {
+        gtk_widget_size_request (grip->_priv->label, &child_requisition);
+        requisition->width += child_requisition.width;
+        layout_height = MAX (layout_height, child_requisition.height);
+    }
+
     requisition->height += layout_height;
 }
 
@@ -556,14 +562,14 @@ gdl_dock_item_grip_size_allocate (GtkWidget     *widget,
         &close_requisition);
     gtk_widget_size_request (grip->_priv->iconify_button,
         &iconify_requisition);
-    
+
     /* Calculate the Minimum Width where buttons will fit */
     int min_width = close_requisition.width + iconify_requisition.width
         + border_width * 2;
     if(grip->_priv->handle_shown)
       min_width += DRAG_HANDLE_SIZE;
     const gboolean space_for_buttons = (allocation->width >= min_width);
-        
+
     /* Set up the rolling child_allocation rectangle */
     if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
         child_allocation.x = border_width/* + ALIGN_BORDER*/;
@@ -577,18 +583,18 @@ gdl_dock_item_grip_size_allocate (GtkWidget     *widget,
         if(space_for_buttons) {
             if (gtk_widget_get_direction (widget) != GTK_TEXT_DIR_RTL)
                 child_allocation.x -= close_requisition.width;
-        
+
             child_allocation.width = close_requisition.width;
             child_allocation.height = close_requisition.height;
         } else {
             child_allocation.width = 0;
         }
-        
+
         gtk_widget_size_allocate (grip->_priv->close_button, &child_allocation);
 
         if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
             child_allocation.x += close_requisition.width;
-    }    
+    }
 
     /* Layout Iconify Button */
     if (gtk_widget_get_visible (grip->_priv->iconify_button)) {
@@ -608,34 +614,34 @@ gdl_dock_item_grip_size_allocate (GtkWidget     *widget,
         if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
             child_allocation.x += iconify_requisition.width;
     }
-    
+
     /* Layout the Grip Handle*/
     if (gtk_widget_get_direction (widget) != GTK_TEXT_DIR_RTL) {
         child_allocation.width = child_allocation.x;
         child_allocation.x = border_width/* + ALIGN_BORDER*/;
-        
+
         if(grip->_priv->handle_shown) {
             child_allocation.x += DRAG_HANDLE_SIZE;
             child_allocation.width -= DRAG_HANDLE_SIZE;
         }
-        
+
     } else {
         child_allocation.width = allocation->width -
             (child_allocation.x - allocation->x)/* - ALIGN_BORDER*/;
-            
+
         if(grip->_priv->handle_shown)
             child_allocation.width -= DRAG_HANDLE_SIZE;
     }
-    
+
     if(child_allocation.width < 0)
       child_allocation.width = 0;
-    
+
     child_allocation.y = border_width;
     child_allocation.height = allocation->height - border_width * 2;
     if(grip->_priv->label) {
       gtk_widget_size_allocate (grip->_priv->label, &child_allocation);
     }
-     
+
     if (grip->title_window) {
         gdk_window_move_resize (grip->title_window,
                                 allocation->x,
