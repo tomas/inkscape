@@ -26,7 +26,7 @@ Basic Installation
 
 Install dependencies:
 
-  apt install build-essential cmake libtool libcmakelibsigc++-3.0-dev libgsl-dev libgc-devlibpopt-dev libgtkmm-2.4-dev libgtkmm-2.4-dev libboost1.83-dev libxslt1-dev libpoppler-dev intltoollibwpd-dev libwpg-devimagemagicklibtoollibaspell-dev automakelibpoppler-private-dev
+  apt install build-essential cmake libtool autoconf imagemagick libcmakelibsigc++-3.0-dev libgsl-dev libgc-devlibpopt-dev libgtkmm-2.4-dev libgtkmm-2.4-dev libboost1.83-dev libxslt1-dev libpoppler-dev intltoollibwpd-dev libwpg-dev libaspell-dev libpoppler-private-dev
 
 Run the bootstrap script (shouldn't be necessary with cmake but apparently we still need it):
 
